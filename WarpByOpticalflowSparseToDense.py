@@ -6,11 +6,14 @@ def WarpByOpticalflowSparseToDense(from_image, to_image, device):
     ''' from_image : torch.Tensor ,to_image : torch.Tensor '''
 
     #@torch.Tensor to ndarray
-    nd_from_image = from_image.detach().to('cpu').squeeze().permute(1,2,0).numpy()
-    nd_to_image   = to_image.detach().to('cpu').squeeze().permute(1,2,0).numpy()
+    nd_from_image = from_image.detach().to('cpu')
+    nd_to_image   = to_image.detach().to('cpu')
 
-    gray_from_image = cv2.cvtColor(nd_from_image, cv2.COLOR_BGR2GRAY)
-    gray_to_image   = cv2.cvtColor(nd_to_image,   cv2.COLOR_BGR2GRAY)
+    sq_from_image = nd_from_image.squeeze().permute(1,2,0).numpy()
+    sq_to_image   = nd_to_image.squeeze().permute(1,2,0).numpy()
+
+    gray_from_image = cv2.cvtColor(sq_from_image, cv2.COLOR_BGR2GRAY)
+    gray_to_image   = cv2.cvtColor(sq_to_image,   cv2.COLOR_BGR2GRAY)
 
     from_image = np.uint8(gray_from_image * 255)
     to_image = np.uint8(gray_to_image *255)
@@ -23,7 +26,7 @@ def WarpByOpticalflowSparseToDense(from_image, to_image, device):
     index_u = np.arange(w)
     index_v = np.arange(h)
 
-    to_image_hat = nd_to_image.copy()
+    to_image_hat = sq_to_image.copy()
 
     sub_index_v = np.ones(w, int)
     for v in index_v:
@@ -39,7 +42,7 @@ def WarpByOpticalflowSparseToDense(from_image, to_image, device):
         sub_v = np.nan_to_num(sub_v)
 
         sub_index_v = np.full(w, v)
-        to_image_hat[sub_v, sub_u, :] = nd_from_image[sub_index_v, index_u]
+        to_image_hat[sub_v, sub_u, :] = sq_from_image[sub_index_v, index_u]
         
     to_image_hat = np.expand_dims(to_image_hat, 0)
     torch_to_image_hat = torch.from_numpy(to_image_hat.astype(np.float32)).clone().permute(0,3,1,2).to(device)
